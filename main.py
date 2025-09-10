@@ -14,7 +14,6 @@ class Risk(str, Enum):
 
 class Dialogue(BaseModel):
     dollId: str
-    type: Risk
     text: str
     utteredAt: datetime
     
