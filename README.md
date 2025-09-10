@@ -8,3 +8,5 @@
 pip install fastapi "uvicorn[standard]"
 uvicorn main:app
 ```
+
+### 2025-09-10 수정 및 PR 테스트
