@@ -1,20 +1,124 @@
 # 고독사 예방을 위한 시니어케어 돌봄로봇 데이터 분석 - python
 
-## 요구사항
+## 파이선 버전
 - python 3.13
 
-## 사용방법
+## 패키지 설치
 ```bash
-# 패키지 설치
+# 주요 패키지 직접 설치할 경우
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cu126 # 개발 환경에 따라 주의
+pip install fastapi uvicorn transformers
+
+# requirements.txt 파일을 이용할 경우
 pip install -r requirements.txt
-# pip install fastapi "uvicorn[standard]"
-
-# 서버 실행 (기본 주소 - http://127.0.0.1:8000)
-uvicorn main:app
-
-# (개발 테스트) 분석 결과 테스트 라우트 - 텍스트 GET 파라미터 분석
-http://127.0.0.1:8000/analyze?text=_대화내용_
-http://127.0.0.1:8000/analyze?text=%EC%8B%9C%EB%8B%88%EC%96%B4:%20%EC%98%A4%EB%8A%98%20%EB%82%A0%EC%94%A8%EA%B0%80%20%EC%96%B4%EB%96%A4%EA%B0%80?%20%EB%A1%9C%EB%B4%87:%20%ED%98%84%EC%9E%AC%EB%8A%94%20%EB%A7%91%EA%B3%A0,%20%EC%98%A4%ED%9B%84%EC%97%90%20%EB%B9%84%20%EC%98%88%EB%B3%B4%EA%B0%80%20%EC%9E%88%EC%8A%B5%EB%8B%88%EB%8B%A4.%20%EC%8B%9C%EB%8B%88%EC%96%B4:%20%EB%B9%84%EB%9D%BC%EB%8B%88%20%EC%82%B0%EC%B1%85%20%EB%82%98%EA%B0%80%EA%B8%B0%EB%8A%94%20%EC%96%B4%EB%A0%B5%EA%B2%A0%EB%84%A4.%20%EB%A1%9C%EB%B4%87:%20%EC%98%A4%EC%A0%84%EC%97%90%EB%8A%94%20%EA%B4%9C%EC%B0%AE%EC%9C%BC%EB%8B%88%20%EC%A7%80%EA%B8%88%20%EB%8B%A4%EB%85%80%EC%98%A4%EC%8B%9C%EB%8A%94%20%EA%B2%8C%20%EC%A2%8B%EC%95%84%EC%9A%94.%20%EC%8B%9C%EB%8B%88%EC%96%B4:%20%EA%B1%B8%EC%9D%84%20%EB%95%8C%20%EC%A7%80%ED%8C%A1%EC%9D%B4%20%EC%B1%99%EA%B2%A8%EC%95%BC%EA%B2%A0%EC%A7%80?%20%EB%A1%9C%EB%B4%87:%20%EB%84%A4,%20%EA%B7%B8%EB%A6%AC%EA%B3%A0%20%EC%9A%B0%EC%82%B0%EB%8F%84%20%EC%A4%80%EB%B9%84%ED%95%B4%20%EB%91%90%EC%84%B8%EC%9A%94.%20%EC%8B%9C%EB%8B%88%EC%96%B4:%20%EC%95%8C%EA%B2%A0%EC%96%B4.%20%EA%B7%BC%EC%B2%98%20%EA%B3%B5%EC%9B%90%EA%B9%8C%EC%A7%80%EB%A7%8C%20%EB%8B%A4%EB%85%80%EC%98%AC%EA%B2%8C.%20%EB%A1%9C%EB%B4%87:%20%EB%8F%8C%EC%95%84%EC%98%A4%EC%8B%A4%20%EB%95%8C%20%EC%A0%9C%EA%B0%80%20%EB%94%B0%EB%9C%BB%ED%95%9C%20%EC%B0%A8%EB%A5%BC%20%EC%A4%80%EB%B9%84%ED%95%B4%EB%93%9C%EB%A6%B4%EA%B2%8C%EC%9A%94.%20%EC%8B%9C%EB%8B%88%EC%96%B4:%20%EA%B7%B8%EA%B1%B0%20%EC%B0%B8%20%EA%B3%A0%EB%A7%99%EA%B5%AC%EB%82%98.%20%EB%A1%9C%EB%B4%87:%20%EC%95%88%EC%A0%84%ED%95%98%EA%B2%8C%20%EB%8B%A4%EB%85%80%EC%98%A4%EC%84%B8%EC%9A%94.
 ```
 
-### 2025-09-12 수정 및 PR 테스트
+## 서버 실행
+```bash
+# 기본 주소 - http://127.0.0.1:8000
+uvicorn main:app
+```
+
+## 대화 분석 요청 API
+### 요청 예시
+```
+POST /analyze HTTP/1.1
+Host: localhost:8000
+Content-Type: application/json
+Content-Length: 329
+
+[
+    {
+        "dollId": "1",
+        "text": "오늘 너무 덥네",
+        "utteredAt": "2025-09-22 10:20:30"
+    },
+    {
+        "dollId": "1",
+        "text": "지금 몇 시야",
+        "utteredAt": "2025-09-22 10:20:40"
+    },
+    {
+        "dollId": "1",
+        "text": "조금 있다가 밥 먹어야 겠다",
+        "utteredAt": "2025-09-22 10:20:50"
+    }
+]
+```
+### 응답 예시
+```json
+
+{
+    "result": "success",
+    "validation_msg": "",
+    "overall_result": {
+        "doll_id": "1",
+        "dialogue_count": 3,
+        "char_length": 32,
+        "label": "positive",
+        "confidence_scores": {
+            "positive": "0.9962",
+            "danger": "0.0031",
+            "critical": "0.0004",
+            "emergency": "0.0003"
+        },
+        "full_text": "오늘 너무 덥네 지금 몇 시야 조금 있다가 밥 먹어야 겠다",
+        "reason": {
+            "evidence": [
+                {
+                    "seq": 1,
+                    "text": "지금 몇 시야",
+                    "score": "0.9984"
+                },
+                {
+                    "seq": 0,
+                    "text": "오늘 너무 덥네",
+                    "score": "0.9969"
+                }
+            ],
+            "summary": "오늘 너무 덥다고 말하며, 밥 먹어야겠다고 함. 식사에 대해 이야기함"
+        }
+    },
+    "dialogue_result": [
+        {
+            "seq": 0,
+            "doll_id": "1",
+            "text": "오늘 너무 덥네",
+            "uttered_at": "2025-09-22T10:20:30",
+            "label": "positive",
+            "confidence_scores": {
+                "positive": "0.9969",
+                "danger": "0.0025",
+                "critical": "0.0003",
+                "emergency": "0.0004"
+            }
+        },
+        {
+            "seq": 1,
+            "doll_id": "1",
+            "text": "지금 몇 시야",
+            "uttered_at": "2025-09-22T10:20:40",
+            "label": "positive",
+            "confidence_scores": {
+                "positive": "0.9984",
+                "danger": "0.0011",
+                "critical": "0.0002",
+                "emergency": "0.0003"
+            }
+        },
+        {
+            "seq": 2,
+            "doll_id": "1",
+            "text": "조금 있다가 밥 먹어야 겠다",
+            "uttered_at": "2025-09-22T10:20:50",
+            "label": "positive",
+            "confidence_scores": {
+                "positive": "0.9967",
+                "danger": "0.0027",
+                "critical": "0.0004",
+                "emergency": "0.0002"
+            }
+        }
+    ]
+}
+```
