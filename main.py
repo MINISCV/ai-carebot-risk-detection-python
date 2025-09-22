@@ -163,27 +163,26 @@ def summarize(text, model, tokenizer, max_length=1024):
     summary = tokenizer.decode(outputs[0], skip_special_tokens=True, clean_up_tokenization_spaces=True)
     return summary
 
-def validate(dialogues):
+class Dialogue(BaseModel):
+    """개별 대화 기록"""
+
+    doll_id: str
+    text: str
+    uttered_at: datetime
+
+def validate(dialogues: List[Dialogue]):
     """유효성 검사"""
 
     if len(dialogues) == 0:
         return "failure", "empty_list"
     
-    if len({dialogue.dollId for dialogue in dialogues}) != 1:
+    if len({dialogue.doll_id for dialogue in dialogues}) != 1:
         return "failure", "invalid_doll_id"
     
     return "success", ""
 
-class Dialogue(BaseModel):
-    """개별 대화 기록"""
-
-    dollId: str
-    text: str
-    utteredAt: datetime
-
 # 라벨 분류 매핑 목록
 label_domain = ['positive', 'danger', 'critical', 'emergency']
-
 
 # ---------------------------
 # Routes
@@ -208,9 +207,9 @@ def analyze(dialogues: List[Dialogue]):
         labeled = label(dialogue.text, models["label_model"], models["label_tokenizer"])
         dialogue_result.append({
             "seq": seq,
-            "doll_id": dialogue.dollId,
+            "doll_id": dialogue.doll_id,
             "text": dialogue.text,
-            "uttered_at": dialogue.utteredAt,
+            "uttered_at": dialogue.uttered_at,
             "label": labeled[0],
             "confidence_scores": labeled[1],
         })
@@ -226,7 +225,7 @@ def analyze(dialogues: List[Dialogue]):
         "result": "success",
         "validation_msg": "",
         "overall_result": {
-            "doll_id" : dialogues[0].dollId,
+            "doll_id" : dialogues[0].doll_id,
             "dialogue_count" : len(dialogues),
             "char_length" : len(full_text),
             "label" : overall_label[0],
