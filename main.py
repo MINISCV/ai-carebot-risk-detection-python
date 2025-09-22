@@ -12,7 +12,7 @@ import torch
 import torch.nn as nn
 from torch.amp import autocast
 
-from transformers import AutoTokenizer, AutoModel, AutoModelForSeq2SeqLM
+from transformers import AutoTokenizer, T5TokenizerFast, AutoModel, AutoModelForSeq2SeqLM
 
 
 # ---------------------------
@@ -43,22 +43,21 @@ class SentimentClassifier(nn.Module):
         return logits
 
 def load_label_model(models):
-    """라벨 분류 모델 로드 - klue/roberta-base 전이학습"""
+    """라벨 분류 모델 로드"""
 
-    state = torch.load("./label_model/finetuned_klue_roberta_base.pth", map_location=device)
-    models["label_tokenizer"] = AutoTokenizer.from_pretrained("./label_model/klue_roberta_base_tokenizer")
+    state = torch.load("./label_model/klue_roberta_base_finetuned_20250921/model.pth", map_location=device)
+    models["label_tokenizer"] = AutoTokenizer.from_pretrained("./label_model/klue_roberta_base_finetuned_20250921")
     models["label_model"] = SentimentClassifier(model_name="klue/roberta-base", n_classes=4, dropout_rate=0.2)
     models["label_model"].load_state_dict(state)
     models["label_model"].eval()
     models["label_model"].to(device)
 
 def load_summary_model(models):
-    """요약 모델 로드 - skt/kobart-base-v1 전이학습"""
+    """요약 모델 로드"""
 
-    model_path = "./summary_model"
-    models["summary_tokenizer"] = AutoTokenizer.from_pretrained(model_path)
+    model_path = "./summary_model/paust_pko_t5_small_finetuned_20250922"
+    models["summary_tokenizer"] = T5TokenizerFast.from_pretrained(model_path)
     models["summary_model"] = AutoModelForSeq2SeqLM.from_pretrained(model_path)
-    models["summary_model"].eval()
     models["summary_model"].to(device)
 
 # 로드한 모델 인스턴스 저장 딕셔너리
@@ -120,48 +119,20 @@ def label(text, model, tokenizer, max_length=128):
     confience_scores = [format(round(n, 4), '.4f') for n in probabilities[0].tolist()]
     return label_domain[predicted_class], dict(zip(label_domain, confience_scores))
 
-def summarize(text, model, tokenizer, max_length=1024):
+def summarize(text, model, tokenizer, max_length=256):
     """대화 요약"""
 
     text = clean_text(text)
-    inputs = tokenizer(
-        text,
-        max_length=max_length,
-        truncation=True,
-        padding="max_length",
-        return_tensors="pt"
-    )
+    input_ids = tokenizer.encode("summarize: " + text, return_tensors="pt").to(device)
 
-    input_ids = inputs["input_ids"].to(device)
-    attention_mask = inputs["attention_mask"].to(device)
-    input_text_length = len(tokenizer.encode(text))
-
-    # TODO 요약 간소화
-    current_min_length = 5
-    if input_text_length <= 5:
-        current_max_length = 10
-    elif input_text_length <= 20:
-        current_max_length = 20
-    elif input_text_length <= 64:
-        current_max_length = 50
-    else:
-        current_max_length = input_text_length
-    
     with torch.no_grad():
-        outputs = model.generate(
-            input_ids=input_ids,
-            attention_mask=attention_mask,
-            max_length=current_max_length,
-            min_length=current_min_length,
+        output_ids = model.generate(
+            input_ids,
+            max_length=max_length,
             num_beams=4,
-            repetition_penalty=2.0,
-            no_repeat_ngram_size=3,
-            eos_token_id=tokenizer.eos_token_id,
-            pad_token_id=tokenizer.pad_token_id,
+            early_stopping=True
         )
-    
-    summary = tokenizer.decode(outputs[0], skip_special_tokens=True, clean_up_tokenization_spaces=True)
-    return summary
+    return tokenizer.decode(output_ids[0], skip_special_tokens=True)
 
 class Dialogue(BaseModel):
     """개별 대화 기록"""
@@ -184,6 +155,7 @@ def validate(dialogues: List[Dialogue]):
 # 라벨 분류 매핑 목록
 label_domain = ['positive', 'danger', 'critical', 'emergency']
 
+
 # ---------------------------
 # Routes
 # ---------------------------
@@ -194,10 +166,7 @@ def analyze(dialogues: List[Dialogue]):
 
     validation = validate(dialogues)
     if validation[0] == "failure":
-        content = {
-            "result": "failure",
-            "validation_msg": validation[1],
-        }
+        content = {"validation_msg": validation[1]}
         return JSONResponse(content=content, status_code=status.HTTP_422_UNPROCESSABLE_CONTENT)
     
     dialogue_result = []
@@ -222,8 +191,6 @@ def analyze(dialogues: List[Dialogue]):
     evidences = [{"seq": v["seq"], "text": v["text"], "score": v["confidence_scores"][overall_label[0]]} for v in evidences][:2]
 
     return {
-        "result": "success",
-        "validation_msg": "",
         "overall_result": {
             "doll_id" : dialogues[0].doll_id,
             "dialogue_count" : len(dialogues),
