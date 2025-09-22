@@ -130,4 +130,5 @@ dmypy.json
 
 
 # DL Model
-/label_classifier_model/*
+/label_model/*
+/summary_model/*
