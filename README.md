@@ -17,6 +17,7 @@ pip install -r requirements.txt
 ```bash
 # 기본 주소 - http://127.0.0.1:8000
 uvicorn main:app
+uvicorn main:app --reload # 서버 실행 중 파일 갱신 시 자동으로 서버 재시작
 ```
 
 ## 대화 분석 요청 API
@@ -45,9 +46,9 @@ Content-Length: 329
     }
 ]
 ```
-### 응답 예시
+### 응답 예시 / 200 OK - 정상
 ```json
-
+// 200 OK
 {
     "result": "success",
     "validation_msg": "",
@@ -117,6 +118,43 @@ Content-Length: 329
                 "danger": "0.0027",
                 "critical": "0.0004",
                 "emergency": "0.0002"
+            }
+        }
+    ]
+}
+```
+### 응답 예시 - 유효성 검사 실패 (요청 본문의 대화 로그 리스트가 비어있음)
+```json
+// 422 Unprocessable Content
+{
+    "result": "failure",
+    "validation_msg": "empty_list"
+}
+```
+### 응답 예시 - 유효성 검사 실패 (대화 로그 리스트 중 유니크한 doll_id 값이 1개가 아님)
+```json
+// 422 Unprocessable Content
+{
+    "result": "failure",
+    "validation_msg": "invalid_doll_id"
+}
+```
+### 응답 예시 - 유효성 검사 실패 (pydantic 라이브러리 검증 실패 포맷 / `TODO` 포맷 커스텀 처리 검토)
+```json
+// 422 Unprocessable Content
+{
+    "detail": [
+        {
+            "type": "missing",
+            "loc": [
+                "body",
+                0,
+                "dollId"
+            ],
+            "msg": "Field required",
+            "input": {
+                "text": "오늘 너무 덥네",
+                "utteredAt": "2025-09-22 10:20:30"
             }
         }
     ]

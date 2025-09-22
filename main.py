@@ -1,9 +1,9 @@
 import re
 from datetime import datetime
 from typing import List
-from enum import Enum
 
-from fastapi import FastAPI
+from fastapi import FastAPI, status
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from contextlib import asynccontextmanager
 # from fastapi.middleware.cors import CORSMiddleware
@@ -195,10 +195,11 @@ def analyze(dialogues: List[Dialogue]):
 
     validation = validate(dialogues)
     if validation[0] == "failure":
-        return {
+        content = {
             "result": "failure",
             "validation_msg": validation[1],
         }
+        return JSONResponse(content=content, status_code=status.HTTP_422_UNPROCESSABLE_CONTENT)
     
     dialogue_result = []
     full_text = ""
