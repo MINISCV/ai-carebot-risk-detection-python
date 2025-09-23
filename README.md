@@ -30,28 +30,26 @@ Content-Length: 329
 
 [
     {
-        "dollId": "1",
+        "doll_id": "1",
         "text": "오늘 너무 덥네",
-        "utteredAt": "2025-09-22 10:20:30"
+        "uttered_at": "2025-09-22 10:20:30"
     },
     {
-        "dollId": "1",
+        "doll_id": "1",
         "text": "지금 몇 시야",
-        "utteredAt": "2025-09-22 10:20:40"
+        "uttered_at": "2025-09-22 10:20:40"
     },
     {
-        "dollId": "1",
+        "doll_id": "1",
         "text": "조금 있다가 밥 먹어야 겠다",
-        "utteredAt": "2025-09-22 10:20:50"
+        "uttered_at": "2025-09-22 10:20:50"
     }
 ]
 ```
-### 응답 예시 / 200 OK - 정상
+### 응답 예시 - 정상
 ```json
 // 200 OK
 {
-    "result": "success",
-    "validation_msg": "",
     "overall_result": {
         "doll_id": "1",
         "dialogue_count": 3,
@@ -127,7 +125,6 @@ Content-Length: 329
 ```json
 // 422 Unprocessable Content
 {
-    "result": "failure",
     "validation_msg": "empty_list"
 }
 ```
@@ -135,7 +132,6 @@ Content-Length: 329
 ```json
 // 422 Unprocessable Content
 {
-    "result": "failure",
     "validation_msg": "invalid_doll_id"
 }
 ```
