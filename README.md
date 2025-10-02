@@ -7,7 +7,7 @@
 ```bash
 # 주요 패키지 직접 설치할 경우
 pip install torch torchvision --index-url https://download.pytorch.org/whl/cu126 # 개발 환경에 따라 주의
-pip install fastapi uvicorn transformers
+pip install fastapi uvicorn transformers pandas scikit-learn 
 
 # requirements.txt 파일을 이용할 경우
 pip install -r requirements.txt
@@ -56,10 +56,10 @@ Content-Length: 329
         "char_length": 32,
         "label": "positive",
         "confidence_scores": {
-            "positive": "0.9962",
-            "danger": "0.0031",
-            "critical": "0.0004",
-            "emergency": "0.0003"
+            "positive": "0.9995",
+            "danger": "0.0002",
+            "critical": "0.0001",
+            "emergency": "0.0000"
         },
         "full_text": "오늘 너무 덥네 지금 몇 시야 조금 있다가 밥 먹어야 겠다",
         "reason": {
@@ -67,15 +67,15 @@ Content-Length: 329
                 {
                     "seq": 1,
                     "text": "지금 몇 시야",
-                    "score": "0.9984"
+                    "score": "1.0000"
                 },
                 {
                     "seq": 0,
                     "text": "오늘 너무 덥네",
-                    "score": "0.9969"
+                    "score": "0.9995"
                 }
             ],
-            "summary": "오늘 너무 덥다고 말하며, 밥 먹어야겠다고 함. 식사에 대해 이야기함"
+            "summary": "오늘 너무 덥다고 말하며 조금 있다가 밥을 먹어야겠다고 함"
         }
     },
     "dialogue_result": [
@@ -86,10 +86,10 @@ Content-Length: 329
             "uttered_at": "2025-09-22T10:20:30",
             "label": "positive",
             "confidence_scores": {
-                "positive": "0.9969",
-                "danger": "0.0025",
-                "critical": "0.0003",
-                "emergency": "0.0004"
+                "positive": "0.9995",
+                "danger": "0.0002",
+                "critical": "0.0001",
+                "emergency": "0.0000"
             }
         },
         {
@@ -99,10 +99,10 @@ Content-Length: 329
             "uttered_at": "2025-09-22T10:20:40",
             "label": "positive",
             "confidence_scores": {
-                "positive": "0.9984",
-                "danger": "0.0011",
-                "critical": "0.0002",
-                "emergency": "0.0003"
+                "positive": "1.0000",
+                "danger": "0.0001",
+                "critical": "0.0001",
+                "emergency": "0.0001"
             }
         },
         {
@@ -112,10 +112,10 @@ Content-Length: 329
             "uttered_at": "2025-09-22T10:20:50",
             "label": "positive",
             "confidence_scores": {
-                "positive": "0.9967",
-                "danger": "0.0027",
-                "critical": "0.0004",
-                "emergency": "0.0002"
+                "positive": "0.9995",
+                "danger": "0.0002",
+                "critical": "0.0001",
+                "emergency": "0.0000"
             }
         }
     ]
@@ -145,12 +145,12 @@ Content-Length: 329
             "loc": [
                 "body",
                 0,
-                "dollId"
+                "doll_id"
             ],
             "msg": "Field required",
             "input": {
                 "text": "오늘 너무 덥네",
-                "utteredAt": "2025-09-22 10:20:30"
+                "uttered_at": "2025-09-22 10:20:30"
             }
         }
     ]
