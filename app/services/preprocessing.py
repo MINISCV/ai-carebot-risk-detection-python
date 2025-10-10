@@ -44,8 +44,8 @@ def apply_emotional_features(df: pd.DataFrame, text_col: str = "text") -> pd.Dat
         # 위험도별 키워드와 가중치 사전
         risk_lexicon = {
             'emergency': {'keywords': ['도와줘', '구해줘', '살려줘', '응급', '위험', '사고', '병원', '119', '112', '불이야', '죽고 싶어', '죽고 싶다', '자살'], 'weight': 3.0},
-            'critical': {'keywords': ['아파', '아프다', '고통', '힘들어', '괴롭다', '괴로워', '스트레스', '우울', '불안', '외롭다', '외로워', '쓸쓸하다', '쓸쓸해'], 'weight': 2.0},
-            'danger': {'keywords': ['힘들어', '어려워', '괴로워', '스트레스', '우울', '불안', '걱정', '답답하다', '답답해'], 'weight': 1.5},
+            'critical': {'keywords': ['아파', '아프다', '고통', '괴롭다', '괴로워', '우울', '외롭다', '외로워', '쓸쓸'], 'weight': 2.0},
+            'danger': {'keywords': ['힘들어', '어려워', '스트레스', '불안', '걱정', '답답'], 'weight': 1.5},
             'positive': {'keywords': ['좋아', '행복', '기뻐', '만족', '감사', '고마워'], 'weight': 0.5}
         }
         for category, data in risk_lexicon.items():

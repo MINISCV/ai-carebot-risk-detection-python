@@ -107,9 +107,16 @@ def analyze_dialogues(dialogues: List[Dialogue], model_manager: ModelManager):
 
     return {
         "overall_result": {
-            "doll_id": dialogues[0].doll_id, "dialogue_count": len(dialogues), "char_length": len(full_text),
-            "label": overall_label_name, "confidence_scores": overall_confidence, "full_text": full_text,
-            "reason": {"evidence": evidences, "summary": summary_text},
+            "doll_id": dialogues[0].doll_id,
+            "dialogue_count": len(dialogues),
+            "char_length": len(full_text),
+            "label": overall_label_name,
+            "confidence_scores": overall_confidence,
+            "full_text": full_text,
+            "reason": {
+                "evidence": evidences,
+                "summary": summary_text
+            },
         },
         "dialogue_result": dialogue_result,
     }
