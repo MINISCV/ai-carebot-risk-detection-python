@@ -129,6 +129,5 @@ dmypy.json
 .pyre/
 
 # Custom
-/label_model
-/summary_model
+/model
 /temp

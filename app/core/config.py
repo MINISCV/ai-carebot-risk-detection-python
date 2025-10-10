@@ -1,8 +1,8 @@
 import torch
 
 # --- Configuration ---
-LABEL_MODEL_PATH = "./label_model"
-SUMMARY_MODEL_PATH = "./summary_model"
+LABEL_MODEL_PATH = "./model/label"
+SUMMARY_MODEL_PATH = "./model/summary"
 LABEL_ORDER = ['positive', 'danger', 'critical', 'emergency']
 EVIDENCE_COUNT = 2
 
