@@ -47,7 +47,7 @@ class ContextDataset(Dataset):
         attention_mask = row["attention_mask"]
 
         # 2. 시간 관련 특성
-        last_delta = row["delta_t"]
+        last_delta = math.log1p(row["delta_t"])
         last_hour = row["hour"]
         # 시간(hour)을 순환적인 특성으로 변환하여 23시와 0시가 가깝다는 것을 표현
         hour_sin = math.sin(2 * math.pi * last_hour / 24)
