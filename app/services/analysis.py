@@ -41,6 +41,7 @@ def analyze_dialogues(dialogues: List[Dialogue], model_manager: ModelManager):
     # --- Label Model Preprocessing ---
     df = pd.DataFrame([d.model_dump() for d in dialogues])
     df = parse_datetime_column(df)
+    df = df.sort_values("uttered_at").reset_index(drop=True)
     df = compute_time_features(df)
     df = apply_emotional_features(df)
     df = build_context_sequences(df, k=K_CONTEXT)
