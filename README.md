@@ -56,26 +56,27 @@ Content-Length: 329
         "char_length": 32,
         "label": "positive",
         "confidence_scores": {
-            "positive": "0.9995",
-            "danger": "0.0002",
-            "critical": "0.0001",
-            "emergency": "0.0000"
+            "positive": "0.9634",
+            "danger": "0.0331",
+            "critical": "0.0015",
+            "emergency": "0.0020"
         },
+        "treatment_plan": "특별한 위험 징후는 없습니다. 지속적으로 모니터링해 주세요.",
         "full_text": "오늘 너무 덥네 지금 몇 시야 조금 있다가 밥 먹어야 겠다",
         "reason": {
             "evidence": [
                 {
                     "seq": 1,
                     "text": "지금 몇 시야",
-                    "score": "1.0000"
+                    "score": "0.9834"
                 },
                 {
-                    "seq": 0,
-                    "text": "오늘 너무 덥네",
-                    "score": "0.9995"
+                    "seq": 2,
+                    "text": "조금 있다가 밥 먹어야 겠다",
+                    "score": "0.9780"
                 }
             ],
-            "summary": "오늘 너무 덥다고 말하며 조금 있다가 밥을 먹어야겠다고 함"
+            "summary": "오늘 너무 덥다고 말하며 밥을 먹어야겠다고 함"
         }
     },
     "dialogue_result": [
@@ -86,10 +87,10 @@ Content-Length: 329
             "uttered_at": "2025-09-22T10:20:30",
             "label": "positive",
             "confidence_scores": {
-                "positive": "0.9995",
-                "danger": "0.0002",
-                "critical": "0.0001",
-                "emergency": "0.0000"
+                "positive": "0.9634",
+                "danger": "0.0331",
+                "critical": "0.0015",
+                "emergency": "0.0020"
             }
         },
         {
@@ -99,10 +100,10 @@ Content-Length: 329
             "uttered_at": "2025-09-22T10:20:40",
             "label": "positive",
             "confidence_scores": {
-                "positive": "1.0000",
-                "danger": "0.0001",
-                "critical": "0.0001",
-                "emergency": "0.0001"
+                "positive": "0.9834",
+                "danger": "0.0109",
+                "critical": "0.0029",
+                "emergency": "0.0029"
             }
         },
         {
@@ -112,10 +113,10 @@ Content-Length: 329
             "uttered_at": "2025-09-22T10:20:50",
             "label": "positive",
             "confidence_scores": {
-                "positive": "0.9995",
-                "danger": "0.0002",
-                "critical": "0.0001",
-                "emergency": "0.0000"
+                "positive": "0.9780",
+                "danger": "0.0179",
+                "critical": "0.0021",
+                "emergency": "0.0018"
             }
         }
     ]

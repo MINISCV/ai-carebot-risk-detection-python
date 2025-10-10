@@ -46,6 +46,7 @@ class OverallResult(BaseModel):
     char_length: int
     label: str
     confidence_scores: ConfidenceScores
+    treatment_plan: str
     full_text: str
     reason: Reason
 

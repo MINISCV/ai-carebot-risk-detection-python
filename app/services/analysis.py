@@ -101,6 +101,15 @@ def analyze_dialogues(dialogues: List[Dialogue], model_manager: ModelManager):
     overall_label_name = overall_result_item['label']
     overall_confidence = overall_result_item['confidence_scores']
 
+    # --- Treatment Plan ---
+    treatment_plan_map = {
+        "positive": "특별한 위험 징후는 없습니다. 지속적으로 모니터링해 주세요.",
+        "danger": "주의가 필요한 발화가 감지되었습니다. 반복될 경우 주기적인 안부 확인 및 말벗 서비스 제공을 권장합니다.",
+        "critical": "위험도가 높은 발화가 감지되었습니다. 상황에 따라 관리자가 직접 통화하여 심리적 안정을 유도하고, 방문 상담이 필요할 수 있습니다.",
+        "emergency": "매우 위급한 발화가 감지되었습니다. 신속하게 상황을 파악한 후 관계 기관에 신고하거나 적극적인 대응이 요구됩니다."
+    }
+    treatment_plan = treatment_plan_map.get(overall_label_name, "잘못된 위험도 분류입니다.")
+
     summary_text = summarize(full_text, model_manager)
     evidences = sorted(dialogue_result, key=lambda x: float(x["confidence_scores"][overall_label_name]), reverse=True)
     evidences = [{"seq": v["seq"], "text": v["text"], "score": v["confidence_scores"][overall_label_name]} for v in evidences][:EVIDENCE_COUNT]
@@ -112,6 +121,7 @@ def analyze_dialogues(dialogues: List[Dialogue], model_manager: ModelManager):
             "char_length": len(full_text),
             "label": overall_label_name,
             "confidence_scores": overall_confidence,
+            "treatment_plan": treatment_plan,
             "full_text": full_text,
             "reason": {
                 "evidence": evidences,
