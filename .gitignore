@@ -128,7 +128,7 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-
-# DL Model
-/label_model/*
-/summary_model/*
+# Custom
+/label_model
+/summary_model
+/temp
