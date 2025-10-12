@@ -194,3 +194,21 @@ Content-Length: 335
     ]
 }
 ```
+
+## 헬스 체크 API
+
+### 요청 예시
+
+```
+GET /health HTTP/1.1
+Host: localhost:8000
+```
+
+### 응답 예시
+
+```json
+// 200 OK
+{
+    "status": "ok"
+}
+```

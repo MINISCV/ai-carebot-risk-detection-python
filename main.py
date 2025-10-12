@@ -28,3 +28,8 @@ app = FastAPI(lifespan=lifespan)
 def analyze(dialogues: List[Dialogue], model_manager: ModelManager = Depends(get_model_manager)):
     """대화 분석 요청 API"""
     return analyze_dialogues(dialogues, model_manager)
+
+@app.get("/health")
+def health_check():
+    """서버의 상태를 확인하는 Health Check API"""
+    return {"status": "ok"}
