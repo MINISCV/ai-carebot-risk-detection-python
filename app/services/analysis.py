@@ -1,5 +1,6 @@
 import pandas as pd # type: ignore
 import torch
+import gc
 from torch.amp import autocast
 from typing import List
 from fastapi import status
@@ -12,7 +13,7 @@ from app.services.preprocessing import (
     parse_datetime_column, compute_time_features, apply_emotional_features,
     build_context_sequences, clean_text_for_summary, K_CONTEXT
 )
-from app.core.config import LABEL_ORDER, EVIDENCE_COUNT
+from app.core.config import LABEL_ORDER, EVIDENCE_COUNT, MAX_TOTAL_TEXT_LENGTH
 
 def summarize(text: str, model_manager: ModelManager) -> str:
     """대화 내용을 요약합니다."""
@@ -35,6 +36,9 @@ def analyze_dialogues(dialogues: List[Dialogue], model_manager: ModelManager):
     # --- Validation ---
     if not dialogues:
         return JSONResponse(content={"validation_msg": "empty_list"}, status_code=status.HTTP_422_UNPROCESSABLE_CONTENT)
+    total_text_length = sum(len(d.text) for d in dialogues)
+    if total_text_length > MAX_TOTAL_TEXT_LENGTH:
+        return JSONResponse(content={"validation_msg": f"char_limit_over ({total_text_length} > {MAX_TOTAL_TEXT_LENGTH})"}, status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE)
     if len({d.doll_id for d in dialogues}) != 1:
         return JSONResponse(content={"validation_msg": "invalid_doll_id"}, status_code=status.HTTP_422_UNPROCESSABLE_CONTENT)
 
@@ -114,7 +118,7 @@ def analyze_dialogues(dialogues: List[Dialogue], model_manager: ModelManager):
     evidences = sorted(dialogue_result, key=lambda x: float(x["confidence_scores"][overall_label_name]), reverse=True)
     evidences = [{"seq": v["seq"], "text": v["text"], "score": v["confidence_scores"][overall_label_name]} for v in evidences][:EVIDENCE_COUNT]
 
-    return {
+    result = {
         "overall_result": {
             "doll_id": dialogues[0].doll_id,
             "dialogue_count": len(dialogues),
@@ -130,3 +134,13 @@ def analyze_dialogues(dialogues: List[Dialogue], model_manager: ModelManager):
         },
         "dialogue_result": dialogue_result,
     }
+
+    # --- Memory Cleanup ---
+    del df, encodings, dataset, batch_items, batch, inputs, logits, probabilities, predicted_class_ids, dialogue_result, full_text
+    if model_manager.device.type == 'cuda':
+        torch.cuda.empty_cache()
+    elif model_manager.device.type == 'mps':
+        torch.mps.empty_cache()
+    gc.collect()
+
+    return result
