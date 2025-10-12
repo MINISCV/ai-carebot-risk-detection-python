@@ -163,7 +163,7 @@ Content-Length: 335
 ```json
 // 422 Unprocessable Content
 {
-    "validation_msg": "char_limit_over ({13498} > {10000})"
+    "validation_msg": "char_limit_over (13498 > 10000)"
 }
 ```
 
