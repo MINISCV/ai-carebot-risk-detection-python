@@ -10,13 +10,15 @@ from app.models.schemas import Dialogue
 from app.core.model_loader import ModelManager
 from app.models.service_models import ContextDataset, collate_fn
 from app.services.preprocessing import (
-    parse_datetime_column, compute_time_features, apply_emotional_features,
-    build_context_sequences, clean_text_for_summary, K_CONTEXT
+    parse_datetime_column, compute_time_features, apply_emotional_features, 
+    build_context_sequences, clean_text_for_summary
 )
-from app.core.config import LABEL_ORDER, EVIDENCE_COUNT, MAX_TOTAL_TEXT_LENGTH
+from app.core.config import LABEL_ORDER, EVIDENCE_COUNT, MAX_TOTAL_TEXT_LENGTH, K_CONTEXT
 
 def summarize(text: str, model_manager: ModelManager) -> str:
-    """대화 내용을 요약합니다."""
+    """
+    대화 내용을 요약합니다.
+    """
     cleaned_text = clean_text_for_summary(text)
     input_ids = model_manager.summary_tokenizer.encode("summarize: " + cleaned_text, return_tensors="pt").to(model_manager.device)
 

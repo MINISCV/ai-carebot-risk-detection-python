@@ -5,6 +5,7 @@ LABEL_MODEL_PATH = "./model/label"
 SUMMARY_MODEL_PATH = "./model/summary"
 LABEL_ORDER = ['positive', 'danger', 'critical', 'emergency']
 MAX_TOTAL_TEXT_LENGTH = 10000
+K_CONTEXT = 20
 EVIDENCE_COUNT = 2
 
 # --- Device Setup ---

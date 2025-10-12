@@ -2,12 +2,7 @@ import pandas as pd
 import re
 from typing import Dict
 
-# --- 1. 설정 (Configurations) ---
-
-# 모델이 참고할 이전 대화(문맥)의 최대 개수
-K_CONTEXT = 20
-
-# --- 2. 라벨 모델 전처리 (Label Model Preprocessing) ---
+# --- 라벨 모델 전처리 (Label Model Preprocessing) ---
 
 def parse_datetime_column(df: pd.DataFrame, col: str = "uttered_at") -> pd.DataFrame:
     """DataFrame의 시간 컬럼을 datetime 객체로 변환합니다."""
@@ -101,7 +96,7 @@ def build_context_sequences(df: pd.DataFrame, k: int) -> pd.DataFrame:
     return pd.concat([df.reset_index(drop=True), seq_df], axis=1)
 
 
-# --- 3. 요약 모델 전처리 (Summary Model Preprocessing) ---
+# --- 요약 모델 전처리 (Summary Model Preprocessing) ---
 
 def clean_text_for_summary(text: str) -> str:
     """
