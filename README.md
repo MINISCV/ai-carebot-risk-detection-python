@@ -158,6 +158,15 @@ Content-Length: 335
 }
 ```
 
+### 응답 예시 - 유효성 검사 실패 (요청 본문 최대 문자수 제한 초과)
+
+```json
+// 422 Unprocessable Content
+{
+    "validation_msg": "char_limit_over ({13498} > {10000})"
+}
+```
+
 ### 응답 예시 - 유효성 검사 실패 (대화 로그 리스트 중 유니크한 doll_id 값이 1개가 아님)
 
 ```json
