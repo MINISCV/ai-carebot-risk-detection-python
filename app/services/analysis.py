@@ -37,12 +37,12 @@ def analyze_dialogues(dialogues: List[Dialogue], model_manager: ModelManager):
     """
     # --- Validation ---
     if not dialogues:
-        return JSONResponse(content={"validation_msg": "empty_list"}, status_code=status.HTTP_422_UNPROCESSABLE_CONTENT)
+        return JSONResponse(content={"validation_msg": "대화 내용이 비었습니다."}, status_code=status.HTTP_422_UNPROCESSABLE_CONTENT)
     total_text_length = sum(len(d.text) for d in dialogues)
     if total_text_length > MAX_TOTAL_TEXT_LENGTH:
-        return JSONResponse(content={"validation_msg": f"char_limit_over ({total_text_length} > {MAX_TOTAL_TEXT_LENGTH})"}, status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE)
+        return JSONResponse(content={"validation_msg": f"분석 가능한 최대 글자수를 초과했습니다. ({total_text_length:,} > {MAX_TOTAL_TEXT_LENGTH:,})"}, status_code=status.HTTP_422_UNPROCESSABLE_CONTENT)
     if len({d.doll_id for d in dialogues}) != 1:
-        return JSONResponse(content={"validation_msg": "invalid_doll_id"}, status_code=status.HTTP_422_UNPROCESSABLE_CONTENT)
+        return JSONResponse(content={"validation_msg": "모든 대화의 인형 ID는 동일해야 합니다."}, status_code=status.HTTP_422_UNPROCESSABLE_CONTENT)
 
     # --- Label Model Preprocessing ---
     df = pd.DataFrame([d.model_dump() for d in dialogues])
