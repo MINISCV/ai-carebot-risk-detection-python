@@ -1,6 +1,7 @@
 import pandas as pd # type: ignore
 import torch
 import gc
+import math
 from torch.amp import autocast
 from typing import List
 from fastapi import status
@@ -66,20 +67,59 @@ def analyze_dialogues(dialogues: List[Dialogue], model_manager: ModelManager):
     df['input_ids'] = encodings['input_ids']
     df['attention_mask'] = encodings['attention_mask']
 
-    # --- Label Model Prediction ---    
+    # --- Label Model Prediction (Sequential) ---
     label_map = {label: i for i, label in enumerate(LABEL_ORDER)}
-
     dataset = ContextDataset(df, label_map)
-    batch_items = [dataset[i] for i in range(len(dataset))]
-    pad_token_id = label_tokenizer.pad_token_id if label_tokenizer.pad_token_id is not None else 0
-    batch = collate_fn(batch_items, pad_token_id)
-    inputs = {k: v.to(model_manager.device) for k, v in batch.items()}
-    
+
+    # 위험도 점수 텐서 (positive:0, danger:1, critical:2, emergency:3)
+    risk_scores = torch.tensor([i for i, _ in enumerate(LABEL_ORDER)], dtype=torch.float, device=model_manager.device)
+    decay_lambda = 0.00384 # 10분(600초) 지나면 영향력 10%
+
+    # 세션별 과거 위험도 누적을 위한 딕셔너리
+    session_context_risks = {}
+    all_logits = []
+
     with torch.no_grad():
-        with autocast(device_type=model_manager.device.type, enabled=(model_manager.device.type == 'cuda')):
-            logits = model_manager.label_model(**inputs)
-        probabilities = torch.softmax(logits, dim=-1)
-        predicted_class_ids = torch.argmax(probabilities, dim=-1)
+        for i in range(len(dataset)):
+            item = dataset[i]
+            inputs = {k: v.unsqueeze(0).to(model_manager.device) for k, v in item.items() if k != 'label'}
+
+            # --- 동적 문맥 위험도 계산 ---
+            row = dataset.df.iloc[i]
+            session_key = (row["doll_id"],) # API에서는 단일 세션으로 간주
+
+            # 세션의 첫 발화인 경우, 문맥 위험도는 0으로 초기화
+            if inputs["time_feats"][0, 3].item() == 1.0: # is_session_start
+                session_context_risks[session_key] = 0.0
+            
+            # 현재 발화의 문맥 위험도 특성을 동적으로 계산된 값으로 교체
+            current_risk = session_context_risks.get(session_key, 0.0)
+            inputs["context_risk_feats"] = torch.tensor([[math.log1p(current_risk)]], dtype=torch.float, device=model_manager.device)
+            
+            # --- 모델 예측 ---
+            with autocast(device_type=model_manager.device.type, enabled=(model_manager.device.type == 'cuda')):
+                logits = model_manager.label_model(**inputs)
+            all_logits.append(logits)
+
+            # --- 다음 스텝을 위한 문맥 위험도 업데이트 ---
+            # 학습 시의 로직과 동일하게, 이전 누적 위험도에 시간 감쇠를 먼저 적용합니다.
+            delta_t = torch.exp(inputs["time_feats"][0, 0]) - 1 # log1p 역변환
+            decay_factor = math.exp(-decay_lambda * delta_t.item())
+            decayed_risk = current_risk * decay_factor
+
+            # 모델의 예측 확률에 위험도 점수를 곱하여 현재 발화의 '기대 위험도'를 계산합니다.
+            probs = torch.softmax(logits, dim=-1)
+            predicted_risk_score = (probs * risk_scores).sum(dim=-1).item()
+            
+            # 예측된 위험도 점수가 임계값(e.g., 0.05)보다 클 때만 누적 위험도에 더합니다.
+            if predicted_risk_score > 0.05:
+                session_context_risks[session_key] = decayed_risk + predicted_risk_score
+            else:
+                session_context_risks[session_key] = decayed_risk
+
+    all_logits_tensor = torch.cat(all_logits, dim=0)
+    probabilities = torch.softmax(all_logits_tensor, dim=-1)
+    predicted_class_ids = torch.argmax(probabilities, dim=-1)
 
     # --- Format Results ---
     dialogue_result = []
@@ -138,7 +178,7 @@ def analyze_dialogues(dialogues: List[Dialogue], model_manager: ModelManager):
     }
 
     # --- Memory Cleanup ---
-    del df, encodings, dataset, batch_items, batch, inputs, logits, probabilities, predicted_class_ids, dialogue_result, full_text
+    del df, encodings, dataset, inputs, all_logits, all_logits_tensor, probabilities, predicted_class_ids, dialogue_result, full_text
     if model_manager.device.type == 'cuda':
         torch.cuda.empty_cache()
     elif model_manager.device.type == 'mps':

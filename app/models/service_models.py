@@ -10,6 +10,8 @@ from torch.utils.data import Dataset
 from transformers import AutoModel
 from typing import List, Dict, Any
 
+from app.core.config import LABEL_ORDER
+
 # --- 1. 데이터셋 클래스 및 함수 (Dataset Classes and Functions) ---
 
 class ContextDataset(Dataset):
