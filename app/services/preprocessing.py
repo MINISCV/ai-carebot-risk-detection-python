@@ -81,12 +81,14 @@ def build_context_sequences(df: pd.DataFrame, k: int) -> pd.DataFrame:
         texts = group['text'].tolist()
         delta_ts = group['delta_t'].tolist()
         hours = group['hour'].tolist()
+        labels = group['label'].tolist() if 'label' in group.columns else [None] * len(group)
         emo_vectors = group[emo_cols].values.tolist()
         
         # 그룹 내 각 발화에 대해 문맥 시퀀스를 생성합니다.
         for i in range(len(group)):
             start_index = max(0, i - k + 1)
             seq_data.append({
+                'seq_labels': labels[start_index:i+1],
                 'seq_texts': texts[start_index:i+1],
                 'seq_delta_t': delta_ts[start_index:i+1],
                 'seq_hours': hours[start_index:i+1],

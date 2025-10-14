@@ -10,23 +10,27 @@ from torch.utils.data import Dataset
 from transformers import AutoModel
 from typing import List, Dict, Any
 
+from app.core.config import LABEL_ORDER
+
 # --- 1. 데이터셋 클래스 및 함수 (Dataset Classes and Functions) ---
 
 class ContextDataset(Dataset):
     """
-    전처리된 데이터를 모델 입력에 사용할 수 있는 형태로 변환하는 PyTorch Dataset 클래스.
+    전처리된 데이터를 모델 학습에 사용할 수 있는 형태로 변환하는 PyTorch Dataset 클래스.
     텍스트 데이터 외에 시간, 감정, 문맥 기반의 추가 특성을 생성합니다.
     """
     def __init__(self, df: pd.DataFrame, label_map: Dict[str, int]):
+        """
+        Args:
+            df (pd.DataFrame): 전처리 및 파싱이 완료된 DataFrame.
+            label_map (Dict[str, int]): 레이블 문자열을 정수 인덱스로 매핑하는 딕셔너리.
+        """
         self.df = df
         self.label_map = label_map
+        # 감정 특성 관련 컬럼 이름을 미리 추출하여 사용합니다.
         self.emo_cols = [c for c in df.columns if c.startswith("emo_")]
-        self.emo_score_indices = {
-            'emergency': self.emo_cols.index('emo_emergency_score') if 'emo_emergency_score' in self.emo_cols else None,
-            'critical': self.emo_cols.index('emo_critical_score') if 'emo_critical_score' in self.emo_cols else None,
-            'danger': self.emo_cols.index('emo_danger_score') if 'emo_danger_score' in self.emo_cols else None,
-        }
-
+        # 레이블별 위험도 점수를 정의합니다.
+        self.risk_scores_by_label = {label: i for i, label in enumerate(LABEL_ORDER)}
     def __len__(self):
         return len(self.df)
 
@@ -47,6 +51,9 @@ class ContextDataset(Dataset):
         attention_mask = row["attention_mask"]
 
         # 2. 시간 관련 특성
+        delta_t_val = row["delta_t"]
+        last_delta = math.log1p(delta_t_val)
+        is_session_start = 1.0 if delta_t_val == 0 else 0.0
         last_hour = row["hour"]
         # 시간(hour)을 순환적인 특성으로 변환하여 23시와 0시가 가깝다는 것을 표현
         hour_sin = math.sin(2 * math.pi * last_hour / 24)
@@ -58,22 +65,19 @@ class ContextDataset(Dataset):
         # 4. 문맥 기반 위험도 특성 (Contextual Risk Feature)
         # 이전 대화들의 위험도와 시간 경과를 함께 고려한 특성입니다.
         # 최근에 위험한 발화가 많았을수록 높은 값을 가집니다.
-        seq_emo_vectors = row["seq_emo_vectors"]
+        seq_labels = row["seq_labels"]
         seq_delta_t = row["seq_delta_t"]
         
         weighted_context_risk = 0.0
         # 문맥에 2개 이상의 발화가 있을 때만 계산 (현재 발화 제외)
-        if len(seq_emo_vectors) > 1:
+        if len(seq_labels) > 1:
             # 현재 발화를 제외한 이전 발화들에 대해 반복
-            for i in range(len(seq_emo_vectors) - 1):
-                emo_vec_context = seq_emo_vectors[i]
-                delta_t = seq_delta_t[i+1] # 해당 발화와 다음 발화 사이의 시간 간격
+            for i in range(len(seq_labels) - 1):
+                label = seq_labels[i]
+                delta_t = seq_delta_t[i+1]  # 해당 발화와 다음 발화 사이의 시간 간격
                 
-                # 각 위험도 레벨의 감정 점수에 가중치를 부여하여 합산
-                utterance_risk_score = 0
-                if self.emo_score_indices['emergency'] is not None: utterance_risk_score += emo_vec_context[self.emo_score_indices['emergency']] * 3.0
-                if self.emo_score_indices['critical'] is not None: utterance_risk_score += emo_vec_context[self.emo_score_indices['critical']] * 2.0
-                if self.emo_score_indices['danger'] is not None: utterance_risk_score += emo_vec_context[self.emo_score_indices['danger']] * 1.0
+                # 이전 발화의 실제 레이블을 기반으로 위험 점수를 가져옵니다.
+                utterance_risk_score = self.risk_scores_by_label.get(label, 0)
                 
                 # 위험 점수가 0보다 클 경우, 시간 경과(delta_t)에 따라 지수적으로 점수를 감쇠시킴
                 if utterance_risk_score > 0:
@@ -89,11 +93,11 @@ class ContextDataset(Dataset):
         item = {
             "input_ids": torch.tensor(input_ids, dtype=torch.long),
             "attention_mask": torch.tensor(attention_mask, dtype=torch.long),
-            "time_feats": torch.tensor([hour_sin, hour_cos], dtype=torch.float),
+            "time_feats": torch.tensor([last_delta, hour_sin, hour_cos, is_session_start], dtype=torch.float),
             "emo_feats": torch.tensor(emo_vec, dtype=torch.float),
             "context_risk_feats": torch.tensor([context_risk_feat], dtype=torch.float),
         }
-        # 레이블이 있는 경우 (학습/검증 데이터) - 서비스에서는 사용되지 않음
+        # 레이블이 있는 경우 (학습/검증 데이터)
         if "label" in row.index and not pd.isna(row["label"]):
             item["label"] = torch.tensor(self.label_map.get(row["label"], -1), dtype=torch.long)
 
@@ -107,9 +111,11 @@ def collate_fn(batch: List[Dict[str, Any]], pad_token_id: int) -> Dict[str, Any]
     input_ids = [b["input_ids"] for b in batch]
     attention_mask = [b["attention_mask"] for b in batch]
     
+    # `pad_sequence`를 사용하여 배치 내 최대 길이에 맞춰 패딩을 동적으로 적용
     input_ids_padded = torch.nn.utils.rnn.pad_sequence(input_ids, batch_first=True, padding_value=pad_token_id)
     attention_mask_padded = torch.nn.utils.rnn.pad_sequence(attention_mask, batch_first=True, padding_value=0)
 
+    # 나머지 특성들은 텐서로 변환 후 쌓아줍니다 (stack).
     time_feats = torch.stack([b["time_feats"] for b in batch], dim=0)
     emo_feats = torch.stack([b["emo_feats"] for b in batch], dim=0)
     context_risk_feats = torch.stack([b["context_risk_feats"] for b in batch], dim=0)
@@ -132,7 +138,7 @@ class ContextRiskModel(nn.Module):
     문맥을 고려한 위험도 분류 모델.
     사전 학습된 언어 모델(Encoder)과 LSTM, 추가 특성을 결합한 하이브리드 구조.
     """
-    def __init__(self, encoder_name: str, emo_feat_dim: int, time_feat_dim: int = 2, num_labels: int = 4, lstm_hidden_size: int = 256, context_risk_feat_dim: int = 1, use_attention: bool = True):
+    def __init__(self, encoder_name: str, emo_feat_dim: int, time_feat_dim: int = 4, num_labels: int = 4, lstm_hidden_size: int = 256, context_risk_feat_dim: int = 1, use_attention: bool = True):
         super().__init__()
         # 모델의 설정을 저장하여 나중에 모델을 불러올 때 동일한 구조를 재현할 수 있도록 함
         self.config = {
@@ -207,8 +213,7 @@ class ContextRiskModel(nn.Module):
         """어텐션 마스크를 고려하여 패딩 토큰을 제외하고 평균 풀링을 수행합니다."""
         input_mask_expanded = attention_mask.unsqueeze(-1).expand(hidden_states.size()).float()
         sum_embeddings = torch.sum(hidden_states * input_mask_expanded, 1)
-        # 0으로 나누는 것을 방지
-        sum_mask = torch.clamp(input_mask_expanded.sum(1), min=1e-9)
+        sum_mask = torch.clamp(input_mask_expanded.sum(1), min=1e-9) # 0으로 나누는 것을 방지
         return sum_embeddings / sum_mask
 
     def save_pretrained(self, save_directory):
